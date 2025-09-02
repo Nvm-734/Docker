@@ -1,0 +1,118 @@
+A Dockerfile is a text file that contains all the commands needed to build a Docker image. It's essentially a blueprint for creating an image. Here are the key components of a Dockerfile, with explanations, differences, and examples.
+
+1. FROM
+The FROM instruction is the foundation of a Dockerfile. It specifies the base image on which your image will be built. Every Dockerfile must start with a FROM instruction (except for a few special cases).
+
+Explanation: It pulls a pre-existing image from a registry (like Docker Hub) and uses it as the starting point. This saves you from having to build an image from scratch.
+
+Example: FROM python:3.9-slim
+
+This uses the official Python 3.9 image (the 'slim' version, which is smaller) as the base. All subsequent instructions will be executed on top of this image.
+
+2. RUN
+The RUN instruction executes a command inside the container during the image build process. The output of each RUN command creates a new layer on top of the previous one.
+
+Explanation: It's used for installing packages, creating directories, and performing other setup tasks. Each RUN command is a separate layer.
+
+Differences: RUN is executed at build time, while CMD and ENTRYPOINT are executed at run time.
+
+Example: RUN apt-get update && apt-get install -y git
+
+This command updates the package list and installs git inside the container.
+
+3. CMD
+The CMD instruction provides a default command to be executed when the container is launched. There can only be one CMD instruction in a Dockerfile.
+
+Explanation: It sets the default command for an executable container. If you specify a command when running the container (e.g., docker run <image> <command>), that command overrides the CMD instruction.
+
+Differences: It's a run-time instruction and is easily overridden.
+
+Example: CMD ["python", "app.py"]
+
+If you run the container without a command (docker run my-python-app), it will execute python app.py. If you run docker run my-python-app bash, the bash command will override CMD.
+
+4. ENTRYPOINT
+The ENTRYPOINT instruction also specifies a command to be executed when the container starts. Unlike CMD, the command set by ENTRYPOINT is not easily overridden and is used as the main executable for the container.
+
+Explanation: It defines the main executable for the image. Any command-line arguments provided at run-time are passed as arguments to the ENTRYPOINT command.
+
+Differences: It's a run-time instruction and is not easily overridden. It's often used in conjunction with CMD to provide default arguments.
+
+Example: ENTRYPOINT ["/usr/bin/super-app"] and CMD ["--help"]
+
+Running docker run my-super-app will execute /usr/bin/super-app --help.
+
+Running docker run my-super-app --version will execute /usr/bin/super-app --version.
+
+5. COPY and ADD
+Both COPY and ADD are used to copy files and directories from the host machine (the one building the image) into the Docker image.
+
+Differences:
+
+COPY is generally preferred because it's more transparent. It only copies files and directories.
+
+ADD has extra features: it can automatically extract compressed archives (.tar, .tar.gz, etc.) and can also copy files from a URL.
+
+Explanation: Use COPY for simple file transfers from your local machine to the image. Use ADD if you need the extra functionality of extracting archives or downloading from a URL.
+
+Example (COPY): COPY . /app
+
+This copies all files from the current directory on the host to the /app directory inside the container.
+
+Example (ADD): ADD https://example.com/archive.tar.gz /tmp
+
+This downloads the archive and extracts it to the /tmp directory.
+
+6. WORKDIR
+The WORKDIR instruction sets the working directory for any subsequent RUN, CMD, ENTRYPOINT, COPY, or ADD instructions.
+
+Explanation: It's similar to the cd command in a terminal. It ensures that subsequent commands are executed from the correct path.
+
+Example:
+
+Dockerfile
+
+WORKDIR /app
+COPY . .
+CMD ["python", "app.py"]
+The COPY . . command will copy files into /app. The CMD will also be executed from /app.
+
+7. EXPOSE
+The EXPOSE instruction informs Docker that the container listens on the specified network ports at runtime.
+
+Explanation: It's a form of documentation—it tells the user and Docker which ports the container will use. It does not publish the ports to the host machine. You must use the -p or --publish flag with docker run to actually map the port.
+
+Example: EXPOSE 8080
+
+This indicates that the application inside the container listens on port 8080.
+
+8. ENV
+The ENV instruction sets environment variables within the image.
+
+Explanation: It's useful for providing configuration values to the application inside the container. These variables can be accessed by the application and by other instructions in the Dockerfile.
+
+Example: ENV APP_VERSION=1.0.0 and ENV DB_HOST=localhost
+
+__The application can read APP_VERSION and DB_HOST at runtime__
+
+# Use a slim version of the official Python image as the base
+FROM python:3.9-slim
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy the Python dependencies file to the working directory
+COPY requirements.txt .
+
+# Install the Python dependencies (a RUN command)
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the entire application source code into the container
+COPY . .
+
+# Expose the port the application will run on
+EXPOSE 5000
+
+# Set the default command to run the Flask application
+# The CMD is a JSON array to ensure it's executed as an executable, not a shell command
+CMD ["python", "app.py"]
